@@ -1,7 +1,7 @@
 import numpy as np
 from random import shuffle
 from past.builtins import xrange
-import pbd
+import pdb
 
 def svm_loss_naive(W, X, y, reg):
   """
@@ -33,6 +33,8 @@ def svm_loss_naive(W, X, y, reg):
     for j in xrange(num_classes):
       if j == y[i]:
         continue
+      dW[:,j] += X[i]/num_train
+      dW[:, y[i]] -= 1.0/num_train*X[i]
       margin = scores[j] - correct_class_score + 1 # note delta = 1
       if margin > 0:
         loss += margin
@@ -44,15 +46,7 @@ def svm_loss_naive(W, X, y, reg):
   # Add regularization to the loss.
   loss += reg * np.sum(W * W)
 
-  #############################################################################
-  # TODO:                                                                     #
-  # Compute the gradient of the loss function and store it dW.                #
-  # Rather that first computing the loss and then computing the derivative,   #
-  # it may be simpler to compute the derivative at the same time that the     #
-  # loss is being computed. As a result you may need to modify some of the    #
-  # code above to compute the gradient.                                       #
-  #############################################################################
-
+  dW += 2*reg*np.sum(W)
 
   return loss, dW
 
