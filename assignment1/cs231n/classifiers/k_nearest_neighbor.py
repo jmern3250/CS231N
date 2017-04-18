@@ -108,7 +108,7 @@ class KNearestNeighbor(object):
     XTest_2 = np.sum(X**2, axis=1).reshape((num_test, 1))
     XTrain_2 = np.sum(self.X_train**2, axis=1).reshape((1, num_train))
     XX = X.dot(self.X_train.T) # shape is (m, n)
-    dists = np.sqrt(XTest_2 + X_Train2 - 2*XX) # shape is (m, n)
+    dists = np.sqrt(XTest_2 + XTrain_2 - 2*XX) # shape is (m, n)
     return dists
 
   def predict_labels(self, dists, k=1):
