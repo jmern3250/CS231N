@@ -64,34 +64,32 @@ def svm_loss_vectorized(W, X, y, reg):
   C = W.shape[1]
   N = X.shape[0]
   L = np.zeros([C,N])
+  LI = np.ones([C,N])
   for i, label in enumerate(y):
-    L[label, i] = 1.0 
-
-  score_v = np.sum(X.dot(W), 1)
-  c_score_v = X.dot(W).dot(L)*(C)
-  c_score_v = c_score_v*np.eye(c_score_v.shape)
-  c_score_v = np.sum(c_score_v, 1)
-  loss_v = score_v - c_score_v + np.ones((N,))
-  zero_v = np.zeros(loss_v.shape)
-  pdb.set_trace()
-  loss_v = np.maximum(loss_v, zero_v)
-  loss = np.sum(loss_v)
+    L[label, i] = 1.0
+    LI[label, i] = 0.0 
+  LI = LI.transpose()
+  S = X.dot(W)
+  CS = X.dot(W).dot(L)
+  CS = CS*np.eye(CS.shape[0], CS.shape[1])
+  CS = np.sum(CS, 1)
+  CS = np.reshape(CS, (-1, 1))
+  M = S - CS + np.ones((N,C))*LI
+  zero_v = np.zeros(M.shape)
+  margins = np.maximum(M, zero_v)
+  loss = np.sum(margins)
   loss /= N
+  dW = np.zeros(W.shape)
+  # dW + = X.transpose().dot(contrib)
+
+  one_m = np.ones(W.shape)
+  contrib = np.array(margins > 0, dtype=float)
+  cont_v = np.reshape(np.sum(contrib, 1), (-1,1))
+  contrib[np.arange(N), y] = -cont_v.T
+  dW += np.dot(X.T, contrib)
+  dW /= N
+
+  dW += reg*2*W
 
   loss += reg * np.sum(W * W) 
-
-  #############################################################################
-  # TODO:                                                                     #
-  # Implement a vectorized version of the gradient for the structured SVM     #
-  # loss, storing the result in dW.                                           #
-  #                                                                           #
-  # Hint: Instead of computing the gradient from scratch, it may be easier    #
-  # to reuse some of the intermediate values that you used to compute the     #
-  # loss.                                                                     #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
-
   return loss, dW
