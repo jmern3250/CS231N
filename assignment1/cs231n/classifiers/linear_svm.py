@@ -58,20 +58,27 @@ def svm_loss_vectorized(W, X, y, reg):
   Structured SVM loss function, vectorized implementation.
 
   Inputs and outputs are the same as svm_loss_naive.
-  """
+  """ 
   loss = 0.0
   dW = np.zeros(W.shape) # initialize the gradient as zero
+  C = W.shape[1]
+  N = X.shape[0]
+  L = np.zeros([C,N])
+  for i, label in enumerate(y):
+    L[label, i] = 1.0 
 
-  #############################################################################
-  # TODO:                                                                     #
-  # Implement a vectorized version of the structured SVM loss, storing the    #
-  # result in loss.                                                           #
-  #############################################################################
-  pass
-  #############################################################################
-  #                             END OF YOUR CODE                              #
-  #############################################################################
+  score_v = np.sum(X.dot(W), 1)
+  c_score_v = X.dot(W).dot(L)*(C)
+  c_score_v = c_score_v*np.eye(c_score_v.shape)
+  c_score_v = np.sum(c_score_v, 1)
+  loss_v = score_v - c_score_v + np.ones((N,))
+  zero_v = np.zeros(loss_v.shape)
+  pdb.set_trace()
+  loss_v = np.maximum(loss_v, zero_v)
+  loss = np.sum(loss_v)
+  loss /= N
 
+  loss += reg * np.sum(W * W) 
 
   #############################################################################
   # TODO:                                                                     #
