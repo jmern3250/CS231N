@@ -1,5 +1,6 @@
 import numpy as np
 from past.builtins import xrange
+from collections import Counter
 import pdb
 
 
@@ -136,7 +137,6 @@ class KNearestNeighbor(object):
       for label in closest_y:
         label_count[label - 1] += 1
       max_idx = np.argmax(label_count)
-      y_pred[i] = max_idx + 1
-
+      y_pred[i] = Counter(closest_y).most_common(1)[0][0]
     return y_pred
 
