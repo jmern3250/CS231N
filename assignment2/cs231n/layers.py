@@ -329,10 +329,42 @@ def conv_backward_naive(dout, cache):
     - dw: Gradient with respect to w
     - db: Gradient with respect to b
     """
-    import pdb
 
-    dx, dw = None, None
+    x, w, b, conv_param = cache
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    x_ = np.pad(x, ((0,0),(0,0),(pad,pad),(pad,pad)), 'constant', constant_values=0)
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+
+    H_ = int(1 + (H + 2 * pad - HH) / stride)
+    W_ = int(1 + (W + 2 * pad - WW) / stride)
+
+    dx = None
     db = np.sum(dout, axis=(0, 2, 3))
+    dw = np.zeros(w.shape)
+    for filter in range(F):
+        for i in range(H_):
+            for j in range(W_):
+                h_ = i*stride 
+                w_ = j*stride
+                inv_conv = x_[:,:,h_:h_+HH, w_:w_+WW]*np.reshape(dout[:, filter, i, j], (-1, 1,1,1))
+                dw[filter,:,:,:] += np.sum(inv_conv, axis=0)
+
+    dx = np.zeros(x.shape)
+    dx_ = np.zeros(x_.shape) 
+
+    for filter in range(F):
+        for i in range(H_):
+            for j in range(W_):
+                h_ = i*stride 
+                w_ = j*stride
+                w_ext = np.zeros((N, C, HH, WW))
+                w_ext += w[filter, :, :, :] 
+                dx_[:,:,h_:h_+HH, w_:w_+WW] += w_ext*np.reshape(dout[:,filter,i,j], (-1, 1,1,1))
+
+    dx = dx_[:,:, pad:pad+H, pad:pad+W]
+
     return dx, dw, db
 
 
@@ -351,14 +383,22 @@ def max_pool_forward_naive(x, pool_param):
     - out: Output data
     - cache: (x, pool_param)
     """
-    out = None
-    ###########################################################################
-    # TODO: Implement the max pooling forward pass                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+
+    N, C, H, W = x.shape
+    HH = pool_param['pool_height']
+    WW = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    H_ = int(1 + (H - HH)/stride)
+    W_ = int(1 + (W - WW)/stride)
+    out = np.zeros((N, C, H_, W_))
+    for c in range(C):
+        for i in range(H_):
+            for j in range(W_):
+                h_ = i*stride 
+                w_ = j*stride
+                out[:,c, i, j] = np.amax(x[:,c,h_:h_+HH, w_:w_+WW], axis=(1,2))
+
     cache = (x, pool_param)
     return out, cache
 
@@ -374,14 +414,32 @@ def max_pool_backward_naive(dout, cache):
     Returns:
     - dx: Gradient with respect to x
     """
+    import pdb
     dx = None
-    ###########################################################################
-    # TODO: Implement the max pooling backward pass                           #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    
+    x, pool_param = cache
+
+    N, C, H, W = x.shape
+
+    HH = pool_param['pool_height']
+    WW = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    H_ = int(1 + (H - HH)/stride)
+    W_ = int(1 + (W - WW)/stride)
+
+    dx = np.zeros(x.shape)
+
+    for c in range(C):
+        for i in range(H_):
+            for j in range(W_):
+                h_ = i*stride 
+                w_ = j*stride
+                maxes = np.argmax(x[:,c,h_:h_+HH, w_:w_+WW], axis=1)
+                # dx[:, c, h_:h_+HH, w_:w_+WW] = maxes == x[:, c, h_:h_+HH, w_:w_+WW]
+                # test = np.zeros(dx[:,c, h_:h_+HH, w_:w_+WW].shape)
+                pdb.set_trace()
+
     return dx
 
 
