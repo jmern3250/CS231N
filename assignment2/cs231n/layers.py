@@ -48,7 +48,7 @@ def affine_backward(dout, cache):
     """
     x, w, b = cache
     N = x.shape[0]
-    D = np.array(x.shape).prod()/N
+    D = int(np.array(x.shape).prod()/N)
     x_ = np.reshape(x, (N,D))
 
 
@@ -144,36 +144,22 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
     out, cache = None, None
     if mode == 'train':
-        #######################################################################
-        # TODO: Implement the training-time forward pass for batch norm.      #
-        # Use minibatch statistics to compute the mean and variance, use      #
-        # these statistics to normalize the incoming data, and scale and      #
-        # shift the normalized data using gamma and beta.                     #
-        #                                                                     #
-        # You should store the output in the variable out. Any intermediates  #
-        # that you need for the backward pass should be stored in the cache   #
-        # variable.                                                           #
-        #                                                                     #
-        # You should also use your computed sample mean and variance together #
-        # with the momentum variable to update the running mean and running   #
-        # variance, storing your result in the running_mean and running_var   #
-        # variables.                                                          #
-        #######################################################################
-        pass
-        #######################################################################
-        #                           END OF YOUR CODE                          #
-        #######################################################################
+
+        mean = np.mean(x, axis=0)
+        xhat = x - mean
+        var = np.var(xhat, axis=0)
+        xhat/= np.sqrt(var + 1e-5)
+        out = gamma*xhat + beta
+        cache = (x, xhat, mean, var, gamma, beta)
+
+        running_mean = momentum*running_mean + (1-momentum)*mean
+        running_var = momentum*running_var + (1-momentum)*var
+
     elif mode == 'test':
-        #######################################################################
-        # TODO: Implement the test-time forward pass for batch normalization. #
-        # Use the running mean and variance to normalize the incoming data,   #
-        # then scale and shift the normalized data using gamma and beta.      #
-        # Store the result in the out variable.                               #
-        #######################################################################
-        pass
-        #######################################################################
-        #                          END OF YOUR CODE                           #
-        #######################################################################
+        x -= running_mean
+        x/= np.sqrt(running_var + 1e-5)
+        out = gamma*x + beta
+        cache = None
     else:
         raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
@@ -201,15 +187,17 @@ def batchnorm_backward(dout, cache):
     - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
     - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
-    dx, dgamma, dbeta = None, None, None
-    ###########################################################################
-    # TODO: Implement the backward pass for batch normalization. Store the    #
-    # results in the dx, dgamma, and dbeta variables.                         #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    x, xhat, mean, var, gamma, beta = cache
+    N = x.shape[0]
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(xhat*dout, axis=0)
+
+    dx_hat = dout*gamma
+    dvar = -0.5*np.sum(dx_hat*(x-mean)*(var + 1e-5)**-1.5, axis=0)
+    dmean = -1*np.sum(dx_hat/(var + 1e-5)**0.5, axis = 0)
+    dx = dx_hat*(var + 1e-5)**-0.5
+    dx += 2*dvar*(x-mean)/N
+    dx += dmean/N
 
     return dx, dgamma, dbeta
 
