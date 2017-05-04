@@ -435,11 +435,10 @@ def max_pool_backward_naive(dout, cache):
             for j in range(W_):
                 h_ = i*stride 
                 w_ = j*stride
-                maxes = np.argmax(x[:,c,h_:h_+HH, w_:w_+WW], axis=1)
-                # dx[:, c, h_:h_+HH, w_:w_+WW] = maxes == x[:, c, h_:h_+HH, w_:w_+WW]
-                # test = np.zeros(dx[:,c, h_:h_+HH, w_:w_+WW].shape)
-                pdb.set_trace()
-
+                for n in range(N):
+                    idx = x[n,c,h_:h_+HH, w_:w_+WW].argmax()
+                    idcs = np.unravel_index(idx, x[n,c,h_:h_+HH, w_:w_+WW].shape)
+                    dx[n,c,h_+idcs[0], w_+idcs[1]] = dout[n, c, i, j]
     return dx
 
 
@@ -465,19 +464,14 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     - out: Output data, of shape (N, C, H, W)
     - cache: Values needed for the backward pass
     """
-    out, cache = None, None
+    N, C, H, W = x.shape
+    D = int(N*H*W)
 
-    ###########################################################################
-    # TODO: Implement the forward pass for spatial batch normalization.       #
-    #                                                                         #
-    # HINT: You can implement spatial batch normalization using the vanilla   #
-    # version of batch normalization defined above. Your implementation should#
-    # be very short; ours is less than five lines.                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    x_ = np.transpose(x, (0,2,3,1))
+    inp = np.reshape(x_, (D,C))
+    out_, cache = batchnorm_forward(inp, gamma, beta, bn_param) 
+    out = np.reshape(out_, (N,H,W,C))
+    out = np.transpose(out, (0,3,1,2))
 
     return out, cache
 
@@ -495,19 +489,14 @@ def spatial_batchnorm_backward(dout, cache):
     - dgamma: Gradient with respect to scale parameter, of shape (C,)
     - dbeta: Gradient with respect to shift parameter, of shape (C,)
     """
-    dx, dgamma, dbeta = None, None, None
+    N, C, H, W = dout.shape
+    D = int(N*H*W)
 
-    ###########################################################################
-    # TODO: Implement the backward pass for spatial batch normalization.      #
-    #                                                                         #
-    # HINT: You can implement spatial batch normalization using the vanilla   #
-    # version of batch normalization defined above. Your implementation should#
-    # be very short; ours is less than five lines.                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    dout_ = np.transpose(dout, (0,2,3,1))
+    inp = np.reshape(dout_, (D,C))
+    dx_, dgamma, dbeta = batchnorm_backward(inp, cache) 
+    dx = np.reshape(dx_, (N,H,W,C))
+    dx = np.transpose(dx, (0,3,1,2))
 
     return dx, dgamma, dbeta
 
